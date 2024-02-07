@@ -1,49 +1,87 @@
 package tenniskata
 
+import (
+	"fmt"
+	"math"
+)
+
 type tennisGame3 struct {
-	p2  int
-	p1  int
-	p1N string
-	p2N string
+	playerOne player
+	playerTwo player
 }
 
-func TennisGame3(p1N string, p2N string) TennisGame {
-	game := &tennisGame3{
-		p1N: p1N,
-		p2N: p2N}
-
-	return game
+type player struct {
+	name  string
+	score int
 }
 
-func (game *tennisGame3) GetScore() string {
-	var s string
-	if game.p1 < 4 && game.p2 < 4 && !(game.p1+game.p2 == 6) {
-		p := []string{"Love", "Fifteen", "Thirty", "Forty"}
-		s = p[game.p1]
-		if game.p1 == game.p2 {
-			return s + "-All"
-		}
-		return s + "-" + p[game.p2]
-	} else {
-		if game.p1 == game.p2 {
-			return "Deuce"
-		}
-		if game.p1 > game.p2 {
-			s = game.p1N
-		} else {
-			s = game.p2N
-		}
-		if (game.p1-game.p2)*(game.p1-game.p2) == 1 {
-			return "Advantage " + s
-		}
-		return "Win for " + s
+const (
+	duecePhaseCondition   = 6
+	initialPhaseCondition = 4
+	dueceTemplate         = "Deuce"
+	advantageTemplate     = "Advantage %s"
+	winTemplate           = "Win for %s"
+	scoreTemplate         = "%s-%s"
+	tieTemplate           = "%s-All"
+)
+
+func TennisGame3(playerOneName string, playerTwoName string) TennisGame {
+	return &tennisGame3{
+		playerOne: player{name: playerOneName},
+		playerTwo: player{name: playerTwoName},
 	}
 }
 
+func (game *tennisGame3) GetScore() string {
+	if game.playerOne.score+game.playerTwo.score >= duecePhaseCondition {
+		return game.renderScoreDuecePhase()
+	}
+
+	if game.playerOne.score < initialPhaseCondition && game.playerTwo.score < initialPhaseCondition {
+		return game.renderScoreInitialPhase()
+	}
+
+	return fmt.Sprintf(winTemplate, game.getWinner())
+
+}
+
+func (game *tennisGame3) renderScoreInitialPhase() string {
+	var scoreMap = map[int]string{
+		0: "Love",
+		1: "Fifteen",
+		2: "Thirty",
+		3: "Forty",
+	}
+
+	if game.playerOne.score == game.playerTwo.score {
+		return fmt.Sprintf(tieTemplate, scoreMap[game.playerOne.score])
+	}
+	return fmt.Sprintf(scoreTemplate, scoreMap[game.playerOne.score], scoreMap[game.playerTwo.score])
+
+}
+
+func (game *tennisGame3) renderScoreDuecePhase() string {
+
+	if game.playerOne.score == game.playerTwo.score {
+		return dueceTemplate
+	}
+
+	if math.Abs(float64(game.playerOne.score-game.playerTwo.score)) == 1 {
+		return fmt.Sprintf(advantageTemplate, game.getWinner())
+	}
+	return fmt.Sprintf(winTemplate, game.getWinner())
+}
+
+func (game *tennisGame3) getWinner() string {
+	if game.playerOne.score > game.playerTwo.score {
+		return game.playerOne.name
+	}
+	return game.playerTwo.name
+}
 func (game *tennisGame3) WonPoint(playerName string) {
-	if playerName == "player1" {
-		game.p1 += 1
+	if playerName == game.playerOne.name {
+		game.playerOne.score += 1
 	} else {
-		game.p2 += 1
+		game.playerTwo.score += 1
 	}
 }
